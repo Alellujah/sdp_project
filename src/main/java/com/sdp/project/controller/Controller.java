@@ -147,7 +147,6 @@ public class Controller {
     @PutMapping("/updateDelivery/{id}")
     public ResponseEntity<Entregas> updateDelivery(@PathVariable(value = "id") Long itemId,
                                                         @RequestBody Entregas itemDetails) throws ResourceNotFoundException {
-
         Entregas item = entregasRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found for this id :: " + itemId));
         if(item != null){
