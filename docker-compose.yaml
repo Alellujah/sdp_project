@@ -12,8 +12,8 @@ services:
       - database-data:/var/opt/mssql
   api:
     build: ./src/main/docker
-    ports:
-      - '8080:8080'
+    expose:
+      - '8080'
     depends_on:
       - mssql
     restart: on-failure
@@ -22,5 +22,26 @@ services:
       - SPRING_DATASOURCE_USERNAME=sa
       - SPRING_DATASOURCE_PASSWORD=Secret1234
 
+  frontend:
+    image: "php:7.4-apache"
+    container_name: frontend
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - "9000:80"
+    volumes:
+      - ./web:/var/www/html
+
+  nginx:
+    container_name: nginx
+    image: nginx:1.13
+    restart: always
+    ports:
+      - 8080:8080
+    volumes:
+      - ./src/main/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - api
 volumes:
   database-data:

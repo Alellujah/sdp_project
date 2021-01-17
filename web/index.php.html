@@ -1,0 +1,35 @@
+<html>
+  <header>
+    <title>SDP Project</title>
+  </header>
+  <body>
+    <section>
+      <h1>Items</h1>
+      <div id="items"></div>
+    </section>
+    <section>
+      <h1>Armazem</h1>
+      <div id="armazem"></div>
+    </section>
+    <section>
+      <h1>Entregas</h1>
+      <div id="entregas"></div>
+    </section>
+  </body>
+  <script>
+    var myHeaders = new Headers();
+
+    var myInit = {
+      method: "GET",
+      headers: myHeaders,
+      mode: "cors",
+      cache: "default",
+    };
+
+    var myRequest = new Request("http://localhost:8080/api/v1/items", myInit);
+
+    fetch(myRequest).then(function (response) {
+      console.log("resp", response);
+    });
+  </script>
+</html>
