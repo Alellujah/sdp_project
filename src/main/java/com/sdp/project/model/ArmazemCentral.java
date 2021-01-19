@@ -42,4 +42,14 @@ public class ArmazemCentral {
         }
         return null;
     }
+
+    public ItemEntrega getItemEntregaById(long id) {
+        for (var item: lista
+        ) {
+            if (item.getId() == id ){
+                return item;
+            }
+        }
+        return null;
+    }
 }

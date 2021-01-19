@@ -65,7 +65,7 @@
             </div>
             <button class="ui button primary" type="submit">Add</button>
         </form>
-        <button style="width:100%" class="ui button danger" id="deleteAll"> Delete all storage</button>
+        <!-- <button style="width:100%" class="ui button danger" id="deleteAll"> Delete all storage</button> -->
     </section>
     <section>
         <h1>Entregas</h1>
@@ -181,7 +181,13 @@
                         btn.onclick = function() {
                             fetch("http://localhost:8080/api/v1/item/" + item.id, deleteHeaders).then(function(response) {
                                 console.log(response);
-                                // location.reload();
+                                if(response.ok){
+                                    location.reload();                                    
+                                }
+                                else{
+                                    alert('Está em uso !!!')
+                                }
+                                    
                             })
                         };
                         editBtn.onclick = function() {
@@ -346,10 +352,10 @@
         const quantidadeItem = document.querySelector("#qtdEntrega").value
         const localEntrega = document.querySelector("#localEntrega").value
         fetch(postDelivery, {
-            body: JSON.stringify([{
-                "items": {itemId: 5}, //id / qtd
+            body: JSON.stringify({
+                "items": {[itemId]: quantidadeItem}, //id / qtd
                 "local": localEntrega
-            }])
+            })
         }).then(function(response) {
             console.log(response)
             location.reload();
