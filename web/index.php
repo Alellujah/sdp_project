@@ -143,7 +143,7 @@
         mode: "cors",
     };
     // GET
-    var getItems = new Request("http://localhost:8080/api/v1/items", getHeaders);
+    var getItems = new Request("http://localhost:8080/api/v1/item", getHeaders);
     var getItemsInStorage = new Request("http://localhost:8080/api/v1/armazem", getHeaders);
     var getDeliveries = new Request("http://localhost:8080/api/v1/delivery", getHeaders);
     // POST
@@ -151,7 +151,7 @@
     var postDelivery = new Request("http://localhost:8080/api/v1/createDelivery", postHeaders);
     //var postDeposit = new Request("http://localhost:8080/api/v1/depositItem/id", postHeaders);
     // PUT
-    var putItem = new Request("http://localhost:8080/api/v1/items/id", putHeaders);
+    var putItem = new Request("http://localhost:8080/api/v1/item/id", putHeaders);
     var putUpdateItemInStorage = "http://localhost:8080/api/v1/updateStoragedItem/id"
     // DELETE
     //var deleteItem = new Request("http://localhost:8080/api/v1/items/id", deleteHeaders);
@@ -179,9 +179,9 @@
                         editBtn.classList.add('primary');
                         editBtn.classList.add('button');
                         btn.onclick = function() {
-                            fetch("http://localhost:8080/api/v1/items/" + item.id, deleteHeaders).then(function(response) {
+                            fetch("http://localhost:8080/api/v1/item/" + item.id, deleteHeaders).then(function(response) {
                                 console.log(response);
-                                location.reload();
+                                // location.reload();
                             })
                         };
                         editBtn.onclick = function() {
@@ -217,16 +217,19 @@
         fetch(getItemsInStorage).then(function(response) {
             if (response.ok) {
                 response.json().then(data => {
-                    data.forEach(item => {
-                        console.log(item)
-                        //btn
+                    data.forEach(lista => {
+                        console.log(lista)
+                      
+                        // LI
+                        lista.lista.forEach(data => {
+                              //btn
                         const btn = document.createElement("button");
                         btn.innerText = 'Delete';
                         btn.classList.add('ui');
                         btn.classList.add('danger');
                         btn.classList.add('button');
                         btn.onclick = function() {
-                            fetch("http://localhost:8080/api/v1/deleteStoragedItem/" + item.id, deleteHeaders).then(function(response) {
+                            fetch("http://localhost:8080/api/v1/deleteStoragedItem/" + data.id, deleteHeaders).then(function(response) {
                                 console.log(response);
                                 if (response.ok) {
                                     location.reload();
@@ -235,12 +238,14 @@
                                 }
                             })
                         };
-                        // LI
-                        const element = document.createElement("LI");
-                        const textNode = document.createTextNode(`Nome: ${item.itemName} , Descricao: ${item.itemDesc}, Stock: ${item.itemStock}`);
-                        element.appendChild(textNode);
-                        armazemDiv.append(element);
-                        element.append(btn);
+                            const element = document.createElement("LI");
+                            console.log('data', data)
+                            const textNode = document.createTextNode(`Nome: ${data.item.nome} , Descricao: ${data.item.descricao}, Stock: ${data.quantidade}`);
+                            element.appendChild(textNode);
+                            armazemDiv.append(element);                        
+                            element.append(btn);
+                        })
+                        
                     })
                 })
             }
@@ -249,8 +254,8 @@
         fetch(getDeliveries).then(function(response) {
             if (response.ok) {
                 response.json().then(data => {
-                    data.forEach(item => {
-                        console.log(item)
+                    data.forEach(data => {
+                        console.log(data)
                         //btn
                         const btn = document.createElement("button");
                         const editBtn = document.createElement("button");
@@ -265,7 +270,7 @@
                         editBtn.classList.add('primary');
                         editBtn.classList.add('button');
                         btn.onclick = function() {
-                            fetch("http://localhost:8080/api/v1/deleteDelivery/" + item.id, deleteHeaders).then(function(response) {
+                            fetch("http://localhost:8080/api/v1/deleteDelivery/" + data.id, deleteHeaders).then(function(response) {
                                 console.log(response);
                                 if (response.ok) {
                                     location.reload();
@@ -279,15 +284,25 @@
                             document.querySelector("#editDeliveryId").value = item.id;                            
                             document.querySelector("#editLocal").value = item.localEntrega;
                             document.querySelector("#editDeliveryItemId").value = item.itemId;                            
-                            document.querySelector("#editQtd").value = item.quantidadeItem;
                         }
+                        
                         // LI
                         const element = document.createElement("LI");
-                        const textNode = document.createTextNode(`ItemID: ${item.itemId}, Local Entrega: ${item.localEntrega} , Quantidade: ${item.quantidadeItem}`);
-                        element.appendChild(textNode);
+                        const h3 = document.createElement("h3");
+                        const local = document.createTextNode(`Local: ${data.localEntrega}`);
+                        h3.appendChild(local);
+                        element.append(h3);
+                        data.list.forEach(item => {
+                            const textNode = document.createTextNode(`Nome: ${item.item.nome}, Descriçao: ${item.item.descricao} , Quantidade: ${item.quantidade}`);                                                    
+                            element.appendChild(textNode);
                         entregasDiv.append(element);
+                        element.append(document.createElement("br"))
+                        })
+                        
+                        element.style.display = "flow-root";
+                      
+                        // span.append(editBtn);
                         span.append(btn);
-                        span.append(editBtn);
                         element.append(span);
                     })
                 })
@@ -319,9 +334,7 @@
         console.log('new stock', newItemStock);
         fetch("http://localhost:8080/api/v1/depositItem/" + itemId, {
             ...postHeaders,
-            body: JSON.stringify({
-                "itemStock": newItemStock,
-            })
+            body: newItemStock           
         }).then(function(response) {
             console.log(response)
             location.reload();
@@ -334,9 +347,8 @@
         const localEntrega = document.querySelector("#localEntrega").value
         fetch(postDelivery, {
             body: JSON.stringify([{
-                "itemId": itemId,
-                "localEntrega": localEntrega,
-                "quantidadeItem": quantidadeItem,
+                "items": {itemId: 5}, //id / qtd
+                "local": localEntrega
             }])
         }).then(function(response) {
             console.log(response)

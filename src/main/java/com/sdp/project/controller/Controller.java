@@ -1,6 +1,5 @@
 package com.sdp.project.controller;
 
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,11 +7,13 @@ import java.util.Map;
 
 
 import com.sdp.project.model.ArmazemCentral;
-import com.sdp.project.model.Entregas;
-import com.sdp.project.model.Items;
+import com.sdp.project.model.Entrega;
+import com.sdp.project.model.Item;
+import com.sdp.project.model.ItemEntrega;
 import com.sdp.project.repository.ArmazemCentralRepository;
-import com.sdp.project.repository.EntregasRepository;
-import com.sdp.project.repository.ItemsRepository;
+import com.sdp.project.repository.EntregaRepository;
+import com.sdp.project.repository.ItemRepository;
+import com.sdp.project.repository.ItemEntregaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,40 +27,41 @@ public class Controller {
     @Autowired
     private ArmazemCentralRepository armazemCentralRepository;
     @Autowired
-    private EntregasRepository entregasRepository;
+    private EntregaRepository entregasRepository;
     @Autowired
-    private ItemsRepository itemsRepository;
+    private ItemRepository itemsRepository;
+    @Autowired
+    private ItemEntregaRepository itemEntregaRepository;
 
     @PostMapping("/createItem")
-    public Items createItem(@RequestBody Items items) {
-        return itemsRepository.save(items);
+    public Item createItem(@RequestBody Item item) {
+        return itemsRepository.save(item);
     }
 
-    @GetMapping("/items")
-    public List<Items> getAllItems() {
+    @GetMapping("/item")
+    public List<Item> getAllItems() {
         return itemsRepository.findAll();
     }
 
-    @PutMapping("/items/{id}")
-    public ResponseEntity<Items> updateItems(@PathVariable(value = "id") Long itemId,
-                                                   @RequestBody Items itemDetails) throws ResourceNotFoundException {
-        Items item = itemsRepository.findById(itemId)
+    @PutMapping("/item/{id}")
+    public ResponseEntity<Item> updateItems(@PathVariable(value = "id") Integer itemId,
+                                                   @RequestBody Item itemDetails) throws ResourceNotFoundException {
+        Item item = itemsRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id :: " + itemId));
 
         item.setNome((itemDetails.getNome()));
         item.setDescricao(itemDetails.getDescricao());
-        final Items updatedItem = itemsRepository.save(item);
+        final Item updatedItem = itemsRepository.save(item);
         return ResponseEntity.ok(updatedItem);
     }
 
-    @DeleteMapping("/items/{id}")
-    public Map<String, Boolean> deleteItems(@PathVariable(value = "id") Long itemId)
+    @DeleteMapping("/item/{id}")
+    public Map<String, Boolean> deleteItems(@PathVariable(value = "id") Integer itemId)
             throws ResourceNotFoundException {
-        Items item = itemsRepository.findById(itemId)
+        Item item = itemsRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found for this id :: " + itemId));
-        ArmazemCentral armazemCentral = armazemCentralRepository.findByItemId(itemId);
-        Entregas entregas = entregasRepository.findByItemId(itemId);
-        if(armazemCentral == null && entregas == null){
+        List<ItemEntrega> itemEntrega = itemEntregaRepository.findByItemId(itemId);
+        if(itemEntrega.size() == 0){
             itemsRepository.delete(item);
             Map<String, Boolean> response = new HashMap<>();
             response.put("deleted", Boolean.TRUE);
@@ -74,47 +76,56 @@ public class Controller {
 
     @GetMapping("/armazem")
     public List<ArmazemCentral> getAllArmazemItems() {
+        ArmazemCentral armazemCentral = armazemCentralRepository.findFirstBy();
+        if(armazemCentral == null){
+            ArmazemCentral newArmazem = new ArmazemCentral();
+            armazemCentral = newArmazem;
+            armazemCentralRepository.save(newArmazem);
+        }
         return armazemCentralRepository.findAll();
     }
 
     @PostMapping("/depositItem/{id}")
-    public ResponseEntity<ArmazemCentral> updateItem(@PathVariable(value = "id") Long itemId,
-                                             @RequestBody ArmazemCentral itemDetails) throws ResourceNotFoundException{
-        Items item = itemsRepository.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Item not found for this id :: " + itemId));
+    public ResponseEntity<ItemEntrega> updateItemEntrega(@PathVariable(value = "id") Integer itemId,
+                                             @RequestBody int quantidade) throws ResourceNotFoundException{
+
+
+
+        Item item = itemsRepository.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Item not found for this id :: " + itemId));
         if(item != null){
-            item.setQuantidade(item.getQuantidade() + itemDetails.getItemStock());
-            itemsRepository.save(item);
-            ArmazemCentral itemAlreadyExists = armazemCentralRepository.findByItemId(itemId);
-            if(itemAlreadyExists == null) {
-                ArmazemCentral newItem = new ArmazemCentral(itemId,itemDetails.getItemStock(),item.getNome(),item.getDescricao());
-                final ArmazemCentral updatedItem = armazemCentralRepository.save(newItem);
+            ArmazemCentral armazemCentral = armazemCentralRepository.findFirstBy();
+            if(armazemCentral == null){
+                ArmazemCentral newArmazem = new ArmazemCentral();
+                armazemCentral = newArmazem;
+                armazemCentralRepository.save(newArmazem);
+            }
+            ItemEntrega itemEntrega = armazemCentral.getItemById(itemId);
+            if(itemEntrega == null) {
+                ItemEntrega newItem = new ItemEntrega(item,quantidade);
+                armazemCentral.getLista().add(newItem);
+                final ItemEntrega updatedItem = itemEntregaRepository.save(newItem);
+                armazemCentralRepository.save(armazemCentral);
                 return ResponseEntity.ok(updatedItem);
             } else {
-                itemAlreadyExists.setItemStock(itemAlreadyExists.getItemStock() + itemDetails.getItemStock());
-                final ArmazemCentral updatedItem = armazemCentralRepository.save(itemAlreadyExists);
+                itemEntrega.setQuantidade(itemEntrega.getQuantidade() + quantidade);
+                final ItemEntrega updatedItem =  itemEntregaRepository.save(itemEntrega);;
                 return ResponseEntity.ok(updatedItem);
             }
         } else {
-            return (ResponseEntity<ArmazemCentral>) ResponseEntity.notFound();
+            return (ResponseEntity<ItemEntrega>) ResponseEntity.notFound();
         }
     }
 
-    @PutMapping("/updateStoragedItem/{id}")
-    public ResponseEntity<ArmazemCentral> updateArmazem(@PathVariable(value = "id") Long itemId,
-                                             @RequestBody ArmazemCentral itemDetails) throws ResourceNotFoundException {
-        ArmazemCentral item = armazemCentralRepository.findById(itemId)
-                .orElseThrow(() -> new ResourceNotFoundException("Item not found for this id :: " + itemId));
-
-        item.setItemStock(item.getItemStock() + itemDetails.getItemStock());
-        final ArmazemCentral updatedItem = armazemCentralRepository.save(item);
-        return ResponseEntity.ok(updatedItem);
-    }
-
     @DeleteMapping("/deleteStoragedItem/{id}")
-    public Map<String, Boolean> deleteArmazemItem(@PathVariable(value = "id") Long itemId)
+    public Map<String, Boolean> deleteArmazemItem(@PathVariable(value = "id") Integer itemId)
             throws ResourceNotFoundException {
-        ArmazemCentral item = armazemCentralRepository.findByItemId(itemId);
-        armazemCentralRepository.delete(item);
+        ArmazemCentral armazemCentral = armazemCentralRepository.findFirstBy();
+        if(armazemCentral == null){
+            ArmazemCentral newArmazem = new ArmazemCentral();
+            armazemCentral = newArmazem;
+            armazemCentralRepository.save(newArmazem);
+        }
+        armazemCentral.getLista().remove(armazemCentral.getItemById(itemId));
         Map<String, Boolean> response = new HashMap<>();
         response.put("deleted", Boolean.TRUE);
         return response;
@@ -130,46 +141,49 @@ public class Controller {
     }
 
     @GetMapping("/delivery")
-    public List<Entregas> getAllDelivery() {
+    public List<Entrega> getAllDelivery() {
         return entregasRepository.findAll();
     }
 
     @PostMapping("/createDelivery")
-    public ResponseEntity<List<Entregas>> createEntrega(@RequestBody List<Entregas> entrega) throws  ResourceNotFoundException{
-        List<Entregas> listaDeEntregas = new ArrayList<>();
-        entrega.forEach(e -> {
-            listaDeEntregas.add(e);
-            entregasRepository.save(e);
-        });
-        return ResponseEntity.ok(listaDeEntregas);
+    public ResponseEntity<Entrega> createEntrega(@RequestBody CreateDeliveryRequest request) throws  ResourceNotFoundException{
+        List<ItemEntrega> lista = new ArrayList<ItemEntrega>();
+        for (var item:request.items.entrySet()
+             ) {
+            lista.add(new ItemEntrega(itemsRepository.findById(item.getKey()).orElseThrow(), item.getValue()));
+        }
+        Entrega newDelivery = new Entrega(lista, request.local);
+        entregasRepository.saveAndFlush(newDelivery);
+        return ResponseEntity.ok(newDelivery);
     }
 
     @PutMapping("/updateDelivery/{id}")
-    public ResponseEntity<Entregas> updateDelivery(@PathVariable(value = "id") Long itemId,
-                                                        @RequestBody Entregas itemDetails) throws ResourceNotFoundException {
-        Entregas item = entregasRepository.findById(itemId)
-                .orElseThrow(() -> new ResourceNotFoundException("Item not found for this id :: " + itemId));
-        if(item != null){
-            List<Entregas> listaDeEntregas = entregasRepository.findAll();
-            listaDeEntregas.forEach(e -> {
-                e.setLocalEntrega(itemDetails.getLocalEntrega());
-                entregasRepository.save(e);
-            });
-            return ResponseEntity.ok(itemDetails);
+    public ResponseEntity<Entrega> updateDelivery(@PathVariable(value = "id") Integer deliveryId,
+                                                        @RequestBody List<ItemEntrega> items) throws ResourceNotFoundException {
+        Entrega delivery = entregasRepository.findEntregaById(deliveryId);
+        if(delivery != null){
+            delivery.setList(items);
+            entregasRepository.save(delivery);
+            return ResponseEntity.ok(delivery);
         }
         else{
-            return (ResponseEntity<Entregas>) ResponseEntity.notFound();
+            return (ResponseEntity<Entrega>) ResponseEntity.notFound();
         }
     }
 
     @DeleteMapping("/deleteDelivery/{id}")
-    public Map<String, Boolean> deleteDelivery(@PathVariable(value = "id") Long itemId)
+    public Map<String, Boolean> deleteDelivery(@PathVariable(value = "id") Integer deliveryId)
             throws ResourceNotFoundException {
-        Entregas item = entregasRepository.findById(itemId).orElseThrow(() -> new ResourceNotFoundException("Item not found for this id :: " + itemId));
-        entregasRepository.delete(item);
+        Entrega delivery = entregasRepository.findEntregaById(deliveryId);
+        entregasRepository.delete(delivery);
         Map<String, Boolean> response = new HashMap<>();
         response.put("deleted", Boolean.TRUE);
         return response;
     }
 
+}
+
+class CreateDeliveryRequest{
+    public HashMap<Integer, Integer> items;
+    public String local;
 }

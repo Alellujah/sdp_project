@@ -1,73 +1,45 @@
 package com.sdp.project.model;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Table(name = "ArmazemCentral")
 public class ArmazemCentral {
-//    ItemId int PRIMARY KEY,
-//    ItemStock int NOT NULL
-    private long id;
-    private long ItemId;
-    private int ItemStock;
-    private String ItemName;
-    private String ItemDesc;
+    private int id;
+    private List<ItemEntrega> lista;
 
     public ArmazemCentral() {
-
     }
-
-    public ArmazemCentral(long ItemId, int ItemStock, String ItemName, String ItemDesc) {
-        this.ItemStock = ItemStock;
-        this.ItemId = ItemId;
-        this.ItemName = ItemName;
-        this.ItemDesc = ItemDesc;
+    public ArmazemCentral(List<ItemEntrega> lista) {
+        this.lista = lista;
     }
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    public long getId() {
+    public int getId() {
         return id;
     }
-    public void setId(long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
-    @Column(name = "item_id", nullable = false)
-    public long getItemId() {
-        return ItemId;
+    @OneToMany(cascade = {CascadeType.ALL})
+    @JoinColumn(name = "items")
+    public List<ItemEntrega> getLista() {
+        return lista;
     }
-    public void setItemId(long ItemId) {
-        this.ItemId = ItemId;
-    }
-
-    @Column(name = "item_stock", nullable = false)
-    public int getItemStock() {
-        return ItemStock;
-    }
-    public void setItemStock(int ItemStock) {
-        this.ItemStock = ItemStock;
+    public void setLista(List<ItemEntrega> lista) {
+        this.lista = lista;
     }
 
-    @Column(name = "item_name", nullable = false)
-    public String getItemName() {
-        return ItemName;
+    public ItemEntrega getItemById(long id) {
+        for (var item: lista
+             ) {
+            if (item.getItem().getId() == id ){
+                return item;
+            }
+        }
+        return null;
     }
-    public void setItemName(String ItemName) {
-        this.ItemName = ItemName;
-    }
-
-    @Column(name = "item_description", nullable = false)
-    public String getItemDesc() {
-        return ItemDesc;
-    }
-    public void setItemDesc(String ItemDesc) {
-        this.ItemDesc = ItemDesc;
-    }
-
-    @Override
-    public String toString() {
-        return "ArmazemCentral [id=" + id + ", ItemId="+ ItemId + ", ItemStock=" + ItemStock + "]";
-    }
-
 }
